@@ -14,11 +14,25 @@
   (if (i/has-questionable-timezone-support? *driver*)
     10
     9)
-  (count (rows (data/dataset sad-toucan-incidents
-                 (data/run-query incidents
-                   (ql/filter (ql/and (ql/> $timestamp "2015-06-01")
-                                      (ql/< $timestamp "2015-06-03")))
-                   (ql/order-by (ql/asc $timestamp)))))))
+  (let [result (rows (data/dataset sad-toucan-incidents
+                       (data/run-query incidents
+                         (ql/filter (ql/and (ql/> $timestamp "2015-06-01")
+                                            (ql/< $timestamp "2015-06-03")))
+                         (ql/order-by (ql/asc $timestamp)))))]
+    (when (and (i/has-questionable-timezone-support? *driver*)
+               (= 9 (count result)))
+      (println "\n\n\n\n\nResults:")
+      (clojure.pprint/pprint result)
+      (println "Count of all rows:"
+               (->> (data/dataset sad-toucan-incidents
+                      (data/run-query incidents
+                        (ql/aggregation (ql/count))))
+                    booleanize-native-form
+                    (format-rows-by [int])
+                    rows
+                    ffirst))
+      (println "\n\n\n\n\n\n\n"))
+    (count result)))
 
 (expect-with-non-timeseries-dbs
   (cond
